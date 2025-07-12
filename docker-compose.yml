@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  recap-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: recap-mcp-server
+    ports:
+      - "3001:3001"
+    volumes:
+      # 持久化数据存储
+      - ./data:/app/data
+      # 可选：挂载配置文件
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - TRANSPORT_MODE=http
+    command: ["node", "dist/index.js", "http", "3001"]
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3001/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - recap-network
+
+  # 可选：用于 stdio 模式的服务 (主要用于调试)
+  recap-mcp-stdio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: recap-mcp-stdio
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - TRANSPORT_MODE=stdio
+    command: ["node", "dist/index.js"]
+    restart: "no"
+    profiles:
+      - stdio
+    networks:
+      - recap-network
+
+networks:
+  recap-network:
+    driver: bridge
+
+volumes:
+  recap-data:
+    driver: local

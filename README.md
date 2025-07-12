@@ -174,6 +174,71 @@ HTTP 模式提供了完整的 MCP 协议支持：
 
 详细的 HTTP 模式使用指南请参考 [HTTP_USAGE.md](docs/HTTP_USAGE.md)
 
+## Docker 部署
+
+### 快速启动
+
+```bash
+# 构建和启动服务 (HTTP 模式)
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f recap-mcp
+
+# 停止服务
+docker-compose down
+```
+
+### 访问服务
+
+- **健康检查**: http://localhost:3001/health
+- **MCP 状态**: http://localhost:3001/mcp/status
+- **MCP 协议端点**: http://localhost:3001/mcp
+
+### 数据持久化
+
+对话数据将自动保存到本地 `./data` 目录，即使容器重启也不会丢失数据。
+
+详细的 Docker 使用指南请参考 [DOCKER_USAGE.md](docs/DOCKER_USAGE.md)
+
+## GitHub Actions 自动化
+
+项目配置了 GitHub Actions workflow 来自动构建和推送 Docker 镜像：
+
+### 自动触发条件
+
+- **Push 到 main/master 分支** - 构建并推送到 Docker Hub
+- **创建版本标签** (如 v1.0.0) - 构建并推送带版本标签的镜像
+- **Pull Request** - 仅构建镜像进行测试，不推送
+
+### 使用发布的镜像
+
+```bash
+# 拉取最新镜像
+docker pull zerob13/recap-mcp-server:latest
+
+# 拉取特定版本
+docker pull zerob13/recap-mcp-server:v1.0.0
+
+# 运行容器
+docker run -d \
+  --name recap-mcp \
+  -p 3001:3001 \
+  -v $(pwd)/data:/app/data \
+  zerob13/recap-mcp-server:latest \
+  node dist/index.js http 3001
+```
+
+### 配置说明
+
+要使用 GitHub Actions 自动化：
+
+1. 在 GitHub 仓库中设置 Docker Hub 凭证
+2. 修改 workflow 文件中的镜像名称
+3. 推送代码或创建版本标签即可自动构建
+
+详细配置指南请参考 [GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md)
+
 ## 项目结构
 
 ```
