@@ -1,12 +1,14 @@
 # Recap MCP Server
 
-一个基于 Express 的 MCP (Model Context Protocol) 服务器，用于对话回顾和分析。
+一个基于 Express 的 MCP (Model Context Protocol) 服务器，用于对话记录和回顾管理。
 
 ## 功能特性
 
-- 🔧 **模块化工具系统** - 支持多种分析工具
+- 📝 **对话记录工具** - 记录、查询和管理对话历史
 - 🌐 **双传输模式** - 支持 stdio 和 HTTP 传输
-- 📊 **对话分析** - 提供摘要、见解和行动项提取
+- 💾 **文件系统存储** - 基于 JSON 文件的本地存储
+- 🏷️ **标签管理** - 支持对话标签分类和搜索
+- 📊 **统计分析** - 提供对话统计和趋势分析
 - 🎯 **TypeScript 优先** - 完整的类型安全支持
 - 🚀 **Express 集成** - 提供 RESTful API 端点
 
@@ -49,23 +51,80 @@ pnpm start http 3001
 
 ## 可用工具
 
-### 1. 对话分析工具
+### 1. 对话记录工具 (conversation_recorder)
 
-分析对话内容，提取摘要、见解或行动项。
+记录、查询和管理对话历史记录。
 
 **参数：**
 
-- `conversation` (string): 需要分析的对话内容
-- `type` (enum): 分析类型 - `summary`, `insights`, `action_items`
+- `conversationContent` (string): 需要记录的对话内容
+- `action` (enum): 操作类型 - `record`, `query`, `stats`
+- `metadata` (object, 可选): 包含标题、参与者、持续时间和对话类型
+- `tags` (array, 可选): 对话标签数组
+- `summary` (string, 可选): 对话摘要 - "今天聊了什么"
+- `thoughts` (string, 可选): 个人想法 - "我觉得..."
+- `factual_notes` (string, 可选): 事实记录 - "发生了什么事"
+- `queryParams` (object, 可选): 查询参数，用于查询历史记录
+
+**支持的对话类型：**
+
+- 技术讨论 (technical_discussion)
+- 问题解决 (problem_solving)
+- 创意头脑风暴 (creative_brainstorming)
+- 教育 (educational)
+- 休闲聊天 (casual_chat)
+- 计划 (planning)
+- 审查反馈 (review_feedback)
+- 其他 (other)
 
 **示例：**
 
+记录对话：
+
 ```json
 {
-  "name": "conversation_analysis",
+  "name": "conversation_recorder",
   "arguments": {
-    "conversation": "今天我们讨论了项目的进展，需要在下周完成设计稿的修改。",
-    "type": "action_items"
+    "conversationContent": "今天我们讨论了项目的进展，需要在下周完成设计稿的修改。",
+    "action": "record",
+    "metadata": {
+      "title": "项目进展讨论",
+      "participants": ["小明", "小红"],
+      "duration": 30,
+      "conversationType": "technical_discussion"
+    },
+    "tags": ["项目", "设计"],
+    "summary": "讨论了项目进展和设计稿修改计划",
+    "thoughts": "项目时间有点紧张，需要合理安排任务",
+    "factual_notes": "确定在下周完成设计稿修改"
+  }
+}
+```
+
+查询历史记录：
+
+```json
+{
+  "name": "conversation_recorder",
+  "arguments": {
+    "conversationContent": "",
+    "action": "query",
+    "queryParams": {
+      "type": "by_tags",
+      "tags": ["项目"]
+    }
+  }
+}
+```
+
+获取统计信息：
+
+```json
+{
+  "name": "conversation_recorder",
+  "arguments": {
+    "conversationContent": "",
+    "action": "stats"
   }
 }
 ```
@@ -77,13 +136,20 @@ pnpm start http 3001
 ### 管理端点
 
 - `GET /health` - 健康检查
-- `GET /mcp/status` - MCP 服务器状态信息
+- `GET /mcp/status` - MCP 服务器状态信息和可用工具列表
 
 ### MCP 协议端点
 
 - `ALL /mcp` - Streamable HTTP 传输
 
-所有 MCP 工具都可以通过这些端点访问，包括 `conversation_analysis`。
+所有 MCP 工具都可以通过这些端点访问，包括 `conversation_recorder`。
+
+### 数据存储
+
+- 对话记录存储在 `data/conversations/` 目录下
+- 每个对话记录保存为独立的 JSON 文件
+- 索引文件 `index.json` 用于快速查询和统计
+- 支持按标签、时间范围、对话类型等多种方式查询
 
 ## 传输模式
 
@@ -115,10 +181,16 @@ recap/
 ├── src/
 │   ├── tools/              # 工具定义
 │   │   └── ConversationTool.ts
-│   ├── resources/          # 资源定义
-│   ├── prompts/            # 提示定义
+│   ├── storage/            # 存储实现
+│   │   └── FileStorage.ts
 │   ├── types/              # 类型定义
+│   │   └── ConversationRecord.ts
+│   ├── resources/          # 资源定义 (预留)
+│   ├── prompts/            # 提示定义 (预留)
 │   └── index.ts            # 主服务器文件
+├── data/                   # 数据存储目录
+│   └── conversations/      # 对话记录存储
+├── debug/                  # 调试脚本
 ├── dist/                   # 构建输出
 ├── package.json            # 项目配置
 ├── tsconfig.json           # TypeScript 配置
@@ -141,6 +213,7 @@ import { z } from "zod";
 
 export const MyToolSchema = z.object({
   input: z.string().describe("工具输入描述"),
+  action: z.enum(["create", "update", "delete"]).describe("操作类型"),
 });
 
 export class MyTool {
@@ -150,11 +223,48 @@ export class MyTool {
 
   static async execute(input: z.infer<typeof MyToolSchema>) {
     // 实现工具逻辑
-    return {
-      type: "text",
-      text: `处理结果: ${input.input}`,
-    };
+    try {
+      // 处理业务逻辑
+      const result = await this.processInput(input);
+
+      return {
+        type: "text",
+        text: `处理结果: ${result}`,
+      };
+    } catch (error) {
+      return {
+        type: "text",
+        text: `处理失败: ${
+          error instanceof Error ? error.message : "未知错误"
+        }`,
+      };
+    }
   }
+
+  private static async processInput(input: z.infer<typeof MyToolSchema>) {
+    // 具体的处理逻辑
+    return `已执行 ${input.action} 操作`;
+  }
+}
+```
+
+### 扩展存储功能
+
+如果需要添加新的存储后端，可以实现 `ConversationStorage` 接口：
+
+```typescript
+import { ConversationStorage } from "./types/ConversationRecord.js";
+
+export class MyStorage implements ConversationStorage {
+  async save(record: ConversationRecord): Promise<void> {
+    // 实现保存逻辑
+  }
+
+  async getAll(): Promise<ConversationRecord[]> {
+    // 实现获取逻辑
+  }
+
+  // 实现其他必需方法...
 }
 ```
 
@@ -196,7 +306,10 @@ export class MyTool {
 - **TypeScript** - 类型安全的 JavaScript
 - **Express** - Web 框架
 - **@modelcontextprotocol/sdk** - MCP 协议 SDK
-- **Zod** - 运行时类型验证
+- **Zod** - 运行时类型验证和架构定义
+- **zod-to-json-schema** - Zod 架构转换为 JSON Schema
+- **CORS** - 跨域资源共享支持
+- **File System** - 基于文件系统的本地存储
 - **pnpm** - 包管理器
 
 ## 许可证
@@ -213,5 +326,9 @@ ISC
 
 - 初始版本
 - 支持基本的 MCP 协议
-- 包含 对话分析工具
+- 包含对话记录工具 (conversation_recorder)
 - 支持 stdio 和 HTTP 传输模式
+- 基于文件系统的本地存储
+- 支持对话标签、分类和搜索功能
+- 提供对话统计和查询功能
+- 包含调试脚本和测试工具
