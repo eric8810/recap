@@ -34,7 +34,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: eric8810
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
@@ -42,7 +42,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: eric8810/recap-mcp-server
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -68,12 +68,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ env.IMAGE_NAME }}
+          repository: recap-mcp-server
           readme-filepath: ./README.md
 
       - name: Test Docker image
         if: github.event_name == 'pull_request'
         run: |
           echo "Testing Docker image..."
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.number }} --version || true
+          docker run --rm eric8810/recap-mcp-server:pr-${{ github.event.number }} --version || true
           echo "Docker image test completed."
