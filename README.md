@@ -215,17 +215,17 @@ docker-compose down
 
 ```bash
 # 拉取最新镜像
-docker pull zerob13/recap-mcp-server:latest
+docker pull eric8810/recap-mcp-server:latest
 
 # 拉取特定版本
-docker pull zerob13/recap-mcp-server:v1.0.0
+docker pull eric8810/recap-mcp-server:v1.0.0
 
 # 运行容器
 docker run -d \
   --name recap-mcp \
   -p 3001:3001 \
   -v $(pwd)/data:/app/data \
-  zerob13/recap-mcp-server:latest \
+  eric8810/recap-mcp-server:latest \
   node dist/index.js http 3001
 ```
 
